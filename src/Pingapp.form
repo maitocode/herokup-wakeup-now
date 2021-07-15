@@ -84,7 +84,7 @@
         <properties/>
         <border type="none"/>
         <children>
-          <component id="bcf6c" class="javax.swing.JList" binding="list2" default-binding="true">
+          <component id="d0baf" class="javax.swing.JTextArea" binding="ttaStatus2">
             <constraints/>
             <properties/>
           </component>
@@ -97,7 +97,7 @@
         <properties/>
         <border type="none"/>
         <children>
-          <component id="1f4a4" class="javax.swing.JList" binding="list1" default-binding="true">
+          <component id="f6e2b" class="javax.swing.JTextArea" binding="ttaStatus1">
             <constraints/>
             <properties/>
           </component>

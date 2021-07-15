@@ -2,11 +2,10 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.time.LocalDateTime;
 
 public class Pingapp extends JFrame {
     private JPanel panelMain;
-    private JTextArea ttaStatus1;
-    private JTextArea ttaStatus2;
     private JButton btnStart1;
     private JButton btnStart2;
     private JTextField ttfUrl1;
@@ -16,12 +15,14 @@ public class Pingapp extends JFrame {
     private JLabel lbUrl1;
     private JLabel lbUrl2;
     private JSlider slider;
-    private JList list1;
-    private JList list2;
+    private JTextArea ttaStatus1;
+    private JTextArea ttaStatus2;
     private countDownWhileWaitingThread countDownWhileWaitingThread1;
     private countDownWhileWaitingThread countDownWhileWaitingThread2;
     private SendHttpRequestThread sendHttpRequestThread1;
     private SendHttpRequestThread sendHttpRequestThread2;
+    private timeDistanceSendRequestThread timeDistanceSendRequestThread1;
+    private timeDistanceSendRequestThread timeDistanceSendRequestThread2;
 
     public Pingapp(String title) {
         super(title);
@@ -31,42 +32,95 @@ public class Pingapp extends JFrame {
         //this.setPreferredSize(new Dimension(500,280));
         this.setResizable(false);
 
-        sendHttpRequestThread1 = new SendHttpRequestThread(ttfUrl1) {
-            @Override
-            public void run() {
-                this.sendRequest();
-                countDownWhileWaitingThread1.setStop(true);
-
-                ttaStatus1.setRows(ttaStatus1.getRows() + 1);
-                System.out.println(this.getResponse());
-                ttaStatus1.append(this.getResponse());
-            }
-        };
-        sendHttpRequestThread2 = new SendHttpRequestThread(ttfUrl2) {
-            @Override
-            public void run() {
-                this.sendRequest();
-                countDownWhileWaitingThread2.setStop(true);
-                ttaStatus2.setRows(ttaStatus2.getRows() + 1);
-                ttaStatus2.append(this.getResponse());
-            }
-        };
-
         btnStart1.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
+                createTimeDistanceSendRequestThread(1, 1);
+                createSendRequestThread(1);
                 createCountDownWhileWaitingThread(1);
-                countDownWhileWaitingThread1.start();
-                sendHttpRequestThread1.start();
+                timeDistanceSendRequestThread1.start();
             }
         });
 
         btnStart2.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                countDownWhileWaitingThread2.start();
+                createTimeDistanceSendRequestThread(2, 1);
+                createSendRequestThread(2);
+                createCountDownWhileWaitingThread(2);
+                timeDistanceSendRequestThread2.start();
             }
         });
+    }
+
+    void createSendRequestThread(int nameNumber) {
+        if (nameNumber == 1) {
+            sendHttpRequestThread1 = new SendHttpRequestThread(ttfUrl1) {
+                @Override
+                public void run() {
+                    this.sendRequest();
+                    countDownWhileWaitingThread1.setStop(true);
+
+                    ttaStatus1.setRows(ttaStatus1.getRows() + 1);
+                    System.out.println(this.getResponse());
+                    ttaStatus1.append(this.getResponse());
+                }
+            };
+        }
+        else {
+            sendHttpRequestThread2 = new SendHttpRequestThread(ttfUrl2) {
+                @Override
+                public void run() {
+                    this.sendRequest();
+                    countDownWhileWaitingThread2.setStop(true);
+                    ttaStatus2.setRows(ttaStatus2.getRows() + 1);
+                    ttaStatus2.append(this.getResponse());
+                }
+            };
+        }
+    }
+
+    void createTimeDistanceSendRequestThread(int nameNumber, int minutes) {
+        if (nameNumber == 1) {
+            timeDistanceSendRequestThread1 = new timeDistanceSendRequestThread(minutes) {
+                @Override
+                public void run() {
+                    countDownWhileWaitingThread1.start();
+                    sendHttpRequestThread1.start();
+
+                    LocalDateTime timeFirst = LocalDateTime.now();
+                    while (!this.isStop()) {
+                        if(LocalDateTime.now().isAfter(timeFirst.plusMinutes(minutes))) {
+                            timeFirst = LocalDateTime.now();
+                            createCountDownWhileWaitingThread(1);
+                            createSendRequestThread(1);
+                            countDownWhileWaitingThread1.start();
+                            sendHttpRequestThread1.start();
+                        }
+                    }
+                }
+            };
+        }
+        else {
+            timeDistanceSendRequestThread2 = new timeDistanceSendRequestThread(minutes) {
+                @Override
+                public void run() {
+                    countDownWhileWaitingThread2.start();
+                    sendHttpRequestThread2.start();
+
+                    LocalDateTime timeFirst = LocalDateTime.now();
+                    while (!this.isStop()) {
+                        if(LocalDateTime.now().isAfter(timeFirst.plusMinutes(minutes))) {
+                            timeFirst = LocalDateTime.now();
+                            createCountDownWhileWaitingThread(2);
+                            createSendRequestThread(2);
+                            countDownWhileWaitingThread2.start();
+                            sendHttpRequestThread2.start();
+                        }
+                    }
+                }
+            };
+        }
     }
 
     void createCountDownWhileWaitingThread(int nameNumber) {
